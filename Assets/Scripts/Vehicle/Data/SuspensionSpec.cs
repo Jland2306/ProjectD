@@ -37,10 +37,16 @@ namespace Touge.Vehicle.Data
                  "Usually 1.5-2x the bump value. Too low and the car floats after a kerb or a flick.")]
         public float reboundDamper = 4200f;
 
-        [Tooltip("Anti-roll bar rate for this axle. [N per m of left/right compression difference]\n" +
-                 "KEY TUNING LEVER: stiffening one axle's bar moves lateral load transfer onto that axle, " +
-                 "which reduces ITS grip. More rear bar = looser rear = easier to initiate a drift.")]
-        public float antiRollStiffness = 9000f;
+        [Tooltip("Anti-roll bar rate for this axle, in newtons per metre of left/right " +
+                 "compression difference. Directly comparable to springStiffness above, but " +
+                 "note a bar contributes TWICE the roll stiffness of a spring at the same rate, " +
+                 "because it acts differentially across the axle. Useful values are 10-20% of " +
+                 "the spring rate. " +
+                 "KEY TUNING LEVER: stiffening one axle's bar moves lateral load transfer onto " +
+                 "that axle, which reduces ITS grip, so more rear bar = looser rear = easier " +
+                 "drift initiation. Too stiff on BOTH flattens the car and kills the roll " +
+                 "transients that a Scandinavian flick depends on.")]
+        public float antiRollStiffness = 3500f;
 
         [Tooltip("Bump stop rate once maxTravel is exceeded. [N/m] Very stiff by design - " +
                  "this is what stops the chassis punching through the ground on a big landing.")]
@@ -60,7 +66,7 @@ namespace Touge.Vehicle.Data
             springStiffness = 24000f,   // Softer rear: less rear grip under load transfer, mildly loose balance.
             bumpDamper = 2300f,
             reboundDamper = 3700f,
-            antiRollStiffness = 11000f  // Stiffer rear bar than front - biases the car toward oversteer.
+            antiRollStiffness = 5000f   // Stiffer rear bar than front - biases the car toward oversteer.
         };
 
         [Tooltip("Layers treated as drivable ground by the suspension casts. " +
