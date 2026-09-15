@@ -1,0 +1,14 @@
+{
+    "name": "Touge.Vehicle",
+    "rootNamespace": "Touge.Vehicle",
+    "references": ["Touge.Core", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

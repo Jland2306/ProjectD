@@ -1,0 +1,14 @@
+{
+    "name": "Touge.Track",
+    "rootNamespace": "Touge.Track",
+    "references": ["Touge.Core", "Unity.Splines"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
