@@ -19,7 +19,7 @@ namespace Touge.Vehicle.Data
 
         [Tooltip("Centre of mass in body-local space, relative to the rigidbody origin. " +
                  "Y is the big one: lower = less weight transfer = flatter, less rotation on entry. [m]")]
-        public Vector3 centerOfMassOffset = new Vector3(0f, -0.15f, 0.05f);
+        public Vector3 centerOfMassOffset = new Vector3(0f, 0.05f, 0.125f);
 
         [Tooltip("Override Unity's auto-computed inertia tensor. Strongly recommended: the auto value " +
                  "is derived from the collider shape and is usually far too high in yaw for a car, " +
@@ -29,7 +29,7 @@ namespace Touge.Vehicle.Data
         [Tooltip("Moment of inertia about each body-local axis. [kg*m^2]\n" +
                  "X = pitch, Y = yaw, Z = roll.\n" +
                  "Yaw (Y) is the drift-critical one: lower = the car rotates and stops rotating faster.")]
-        public Vector3 inertiaTensor = new Vector3(700f, 1100f, 350f);
+        public Vector3 inertiaTensor = new Vector3(1250f, 1350f, 350f);
 
         [Tooltip("Aerodynamic drag, expressed as the force coefficient k in F = k * v^2. [N/(m/s)^2]\n" +
                  "k = 0.5 * airDensity * Cd * frontalArea. For a boxy 80s hatch: ~0.5*1.225*0.36*1.8 = 0.40")]

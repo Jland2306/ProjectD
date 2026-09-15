@@ -1,7 +1,7 @@
 {
     "name": "Touge.Editor",
     "rootNamespace": "Touge.Editor",
-    "references": ["Touge.Core", "Touge.Vehicle", "Touge.CameraRig", "Touge.Track", "Touge.Modes", "Touge.UI", "Unity.Splines", "Unity.InputSystem"],
+    "references": ["Touge.Core", "Touge.Vehicle", "Touge.CameraRig", "Touge.Track", "Touge.Modes", "Touge.UI", "Unity.Splines", "Unity.Mathematics", "Unity.InputSystem"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

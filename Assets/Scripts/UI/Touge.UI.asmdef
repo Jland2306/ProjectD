@@ -1,7 +1,7 @@
 {
     "name": "Touge.UI",
     "rootNamespace": "Touge.UI",
-    "references": ["Touge.Core", "Touge.Vehicle", "Touge.Modes"],
+    "references": ["Touge.Core", "Touge.Vehicle", "Touge.Modes", "Unity.InputSystem"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

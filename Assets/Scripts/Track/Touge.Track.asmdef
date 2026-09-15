@@ -1,7 +1,7 @@
 {
     "name": "Touge.Track",
     "rootNamespace": "Touge.Track",
-    "references": ["Touge.Core", "Unity.Splines"],
+    "references": ["Touge.Core", "Unity.Splines", "Unity.Mathematics"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
