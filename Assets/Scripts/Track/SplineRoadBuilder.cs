@@ -480,15 +480,22 @@ namespace Touge.Track
                 child = created.transform;
             }
 
-            MeshFilter filter = child.GetComponent<MeshFilter>() ?? child.gameObject.AddComponent<MeshFilter>();
-            MeshRenderer renderer = child.GetComponent<MeshRenderer>() ?? child.gameObject.AddComponent<MeshRenderer>();
+            // TryGetComponent, never "GetComponent() ?? AddComponent()". A missing component comes
+            // back as Unity's fake null - a live C# reference wrapping a null native pointer - so ??
+            // never falls through to AddComponent, and the next line throws MissingComponentException.
+            if (!child.TryGetComponent(out MeshFilter filter))
+                filter = child.gameObject.AddComponent<MeshFilter>();
+
+            if (!child.TryGetComponent(out MeshRenderer renderer))
+                renderer = child.gameObject.AddComponent<MeshRenderer>();
 
             filter.sharedMesh = mesh;
             if (material != null) renderer.sharedMaterial = material;
 
             if (!addCollider) return;
 
-            MeshCollider collider = child.GetComponent<MeshCollider>() ?? child.gameObject.AddComponent<MeshCollider>();
+            if (!child.TryGetComponent(out MeshCollider collider))
+                collider = child.gameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = null;      // Force the collider to rebuild from the new mesh data.
             collider.sharedMesh = mesh;
         }

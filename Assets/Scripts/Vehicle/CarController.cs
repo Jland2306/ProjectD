@@ -107,7 +107,19 @@ namespace Touge.Vehicle
 
             // Any MonoBehaviour on this object implementing IVehicleInput becomes the driver. An AI
             // or replay driver can replace it at any time via SetInput.
-            _input ??= GetComponent<IVehicleInput>();
+            //
+            // Scanned explicitly rather than via GetComponent<IVehicleInput>(): asking for an
+            // interface can hand back Unity's fake null, which would then NOT compare equal to null
+            // through an interface reference and would fault later instead of failing here.
+            if (_input == null)
+            {
+                foreach (MonoBehaviour behaviour in GetComponents<MonoBehaviour>())
+                {
+                    if (behaviour is not IVehicleInput candidate) continue;
+                    _input = candidate;
+                    break;
+                }
+            }
         }
 
         private void OnEnable()

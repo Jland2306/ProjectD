@@ -356,33 +356,58 @@ namespace Touge.Editor
         internal static void SaveGeneratedMeshes(SplineRoadBuilder road)
         {
             CarSpecFactory.EnsureFolder(MeshFolder);
-            SaveMesh(road.RoadMesh, "RoadSurface");
-            SaveMesh(road.VergeMesh, "Verge");
-            SaveMesh(road.RailMesh, "Guardrails");
+
+            // Persist, then point the scene at whatever actually ended up on disk. On a REBUILD the
+            // persisted mesh is the pre-existing asset, not the freshly built object - so without the
+            // reassignment the scene would reference a mesh that lives nowhere and the road would
+            // vanish the next time the scene was opened.
+            Reassign(road, "RoadSurface", SaveMesh(road.RoadMesh, "RoadSurface"));
+            Reassign(road, "Verge", SaveMesh(road.VergeMesh, "Verge"));
+            Reassign(road, "Guardrails", SaveMesh(road.RailMesh, "Guardrails"));
         }
 
-        private static void SaveMesh(Mesh mesh, string name)
+        /// <summary>Write a mesh to disk and return the persisted instance.</summary>
+        private static Mesh SaveMesh(Mesh mesh, string name)
         {
-            if (mesh == null) return;
+            if (mesh == null) return null;
 
             string path = $"{MeshFolder}/{name}.asset";
             Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
 
-            if (existing != null)
+            if (existing == null)
             {
-                // Overwrite in place so any existing scene references stay valid.
-                existing.Clear();
-                existing.indexFormat = mesh.indexFormat;
-                existing.vertices = mesh.vertices;
-                existing.triangles = mesh.triangles;
-                existing.uv = mesh.uv;
-                existing.RecalculateNormals();
-                existing.RecalculateBounds();
-                EditorUtility.SetDirty(existing);
-                return;
+                AssetDatabase.CreateAsset(mesh, path);
+                return mesh;
             }
 
-            AssetDatabase.CreateAsset(mesh, path);
+            // Overwrite in place so references held by other scenes stay valid.
+            existing.Clear();
+            existing.indexFormat = mesh.indexFormat;
+            existing.vertices = mesh.vertices;
+            existing.triangles = mesh.triangles;
+            existing.uv = mesh.uv;
+            existing.RecalculateNormals();
+            existing.RecalculateBounds();
+            EditorUtility.SetDirty(existing);
+            return existing;
+        }
+
+        /// <summary>Repoint a generated child's renderer and collider at the persisted mesh.</summary>
+        private static void Reassign(SplineRoadBuilder road, string childName, Mesh persisted)
+        {
+            if (persisted == null) return;
+
+            Transform child = road.transform.Find(childName);
+            if (child == null) return;
+
+            if (child.TryGetComponent(out MeshFilter filter))
+                filter.sharedMesh = persisted;
+
+            if (child.TryGetComponent(out MeshCollider collider))
+            {
+                collider.sharedMesh = null;      // Force a rebuild of the collision data.
+                collider.sharedMesh = persisted;
+            }
         }
 
         private static void CreateTrackDefinition(float length, float drop, Transform carTransform)

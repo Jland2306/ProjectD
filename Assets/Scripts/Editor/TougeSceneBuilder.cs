@@ -256,8 +256,8 @@ namespace Touge.Editor
             camera.orthographicSize = 9f;
             camera.farClipPlane = 600f;
 
-            IsoFollowCamera follow = camera.gameObject.GetComponent<IsoFollowCamera>()
-                                     ?? camera.gameObject.AddComponent<IsoFollowCamera>();
+            if (!camera.TryGetComponent(out IsoFollowCamera follow))
+                follow = camera.gameObject.AddComponent<IsoFollowCamera>();
 
             SetObjectField(follow, "target", car.transform);
             SetObjectField(follow, "targetBody", car.GetComponent<Rigidbody>());
