@@ -46,6 +46,24 @@ namespace Touge.Vehicle.Data
                  "an infinite impulse - the physical basis of the clutch kick.")]
         public float clutchMaxTorqueNm = 320f;
 
+        [Header("Auto-clutch")]
+        [Tooltip("Let the car slip its own clutch at low engine speed, the way a driver's left foot " +
+                 "does. Without it an idling engine in gear transmits full clutch capacity, which " +
+                 "produces a hard creep and a violent launch. Turn it off to drive the clutch " +
+                 "entirely by hand.")]
+        public bool autoClutchEnabled = true;
+
+        [Tooltip("Engine speed above which the auto-clutch stops intervening and the clutch locks " +
+                 "fully. [rpm] Must sit above idle and below the revs a clutch kick is thrown at, " +
+                 "or it would blunt the kick.")]
+        public float autoClutchEngageRpm = 2500f;
+
+        [Tooltip("At idle, the fraction of engine torque the auto-clutch will pass to the wheels. " +
+                 "The remainder is left over to spin the engine up, which is what makes a launch " +
+                 "build instead of bogging. Lower = lazier, more slip; 1 would bog the engine.")]
+        [Range(0.2f, 0.95f)]
+        public float autoClutchSlipShare = 0.6f;
+
         [Tooltip("Pedal travel to clutch engagement mapping. X = pedal (0 released .. 1 floored), " +
                  "Y = fraction of clutchMaxTorqueNm transmitted. The steep section is the bite point.")]
         public AnimationCurve clutchEngagementCurve = new AnimationCurve(

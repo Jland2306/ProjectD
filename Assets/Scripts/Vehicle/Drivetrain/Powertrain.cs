@@ -135,6 +135,25 @@ namespace Touge.Vehicle.Drivetrain
             float engagement = Mathf.Clamp01(gearbox.clutchEngagementCurve.Evaluate(pedal));
             float clutchCapacity = gearbox.clutchMaxTorqueNm * engagement;
 
+            // ---- Auto-clutch --------------------------------------------------------------------
+            // Engine speed is floored at stallRpm rather than modelled as a true stall, so without
+            // this an idling engine in gear hands the driveline its FULL clutch capacity - 320 N*m
+            // becomes 4441 N*m at the axle in first, which is a hard creep and a violent launch.
+            //
+            // The ceiling is a fraction of what the engine is actually producing, rising to full
+            // capacity by autoClutchEngageRpm. Leaving a share of engine torque unclaimed is the
+            // important part: that surplus is what accelerates the flywheel, so a launch builds revs
+            // instead of bogging against a clutch that demands everything the engine makes.
+            //
+            // It yields entirely to the player: touching the clutch pedal disables it, and above the
+            // engagement RPM it does nothing, so a clutch kick at 6000 rpm is untouched.
+            if (gearbox.autoClutchEnabled && pedal < 0.01f)
+            {
+                float ramp = Mathf.InverseLerp(engine.idleRpm, gearbox.autoClutchEngageRpm, rpm);
+                float atIdle = Mathf.Max(0f, EngineTorqueNm) * gearbox.autoClutchSlipShare;
+                clutchCapacity = Mathf.Min(clutchCapacity, Mathf.Lerp(atIdle, clutchCapacity, ramp));
+            }
+
             if (Mathf.Abs(totalRatio) < TougeMath.Epsilon)
             {
                 // Neutral: the driveline is disconnected, so the engine sees only its own inertia.
