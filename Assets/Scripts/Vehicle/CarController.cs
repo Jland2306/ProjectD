@@ -167,7 +167,7 @@ namespace Touge.Vehicle
             ApplyBrakeTorques(speed);
 
             // 6. Powertrain, then split its output across the driven axles.
-            _powertrain.Step(spec, _input, AverageDrivenWheelOmega(), dt);
+            _powertrain.Step(spec, _input, AverageDrivenWheelOmega(), DrivenWheelInertia(), dt);
             DistributeDriveTorque(dt);
 
             // 7. Tyre forces and wheel rotation. Uses the loads from step 2 and the torques from 5-6.
@@ -273,6 +273,25 @@ namespace Touge.Vehicle
             }
 
             return count > 0 ? total / count : 0f;
+        }
+
+        /// <summary>
+        /// Combined rotational inertia of every driven wheel. The clutch needs this to work out how
+        /// much torque actually synchronises the engine to the driveline - see the reduced-inertia
+        /// note in <see cref="Powertrain.Step"/>.
+        /// </summary>
+        private float DrivenWheelInertia()
+        {
+            DifferentialSpec diff = spec.differential;
+            float total = 0f;
+
+            foreach (Wheel wheel in _wheels)
+            {
+                if (!diff.IsAxleDriven(wheel.IsFront)) continue;
+                total += spec.GetAxle(wheel.IsFront).WheelInertia;
+            }
+
+            return total;
         }
 
         /// <summary>Route driveshaft torque to the driven axles and through their differentials.</summary>

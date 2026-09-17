@@ -72,8 +72,11 @@ namespace Touge.Vehicle.Drivetrain
         /// <param name="spec">Car configuration.</param>
         /// <param name="input">Driver demand for this step.</param>
         /// <param name="drivenWheelOmega">Mean angular velocity of the driven wheels. [rad/s]</param>
+        /// <param name="drivenWheelInertia">Combined rotational inertia of every driven wheel.
+        /// [kg*m^2] Needed for the clutch's reduced-inertia synchronisation.</param>
         /// <param name="dt">Physics timestep. [s]</param>
-        public void Step(CarSpec spec, IVehicleInput input, float drivenWheelOmega, float dt)
+        public void Step(CarSpec spec, IVehicleInput input, float drivenWheelOmega,
+                         float drivenWheelInertia, float dt)
         {
             EngineSpec engine = spec.engine;
             GearboxSpec gearbox = spec.gearbox;
@@ -166,10 +169,33 @@ namespace Touge.Vehicle.Drivetrain
                 float targetEngineOmega = drivenWheelOmega * totalRatio;
                 float omegaError = EngineOmega - targetEngineOmega;
 
-                // Torque that would synchronise the engine to the driveline within one step. Clamping
-                // it to the clutch's capacity is what turns an instantaneous pedal release into a
-                // finite, tunable torque spike instead of an impulse.
-                float syncTorque = omegaError * engine.flywheelInertia / Mathf.Max(dt, TougeMath.Epsilon);
+                // Torque that would synchronise the engine to the driveline within one step.
+                //
+                // The inertia here must be the REDUCED (harmonic) inertia of the two sides, not the
+                // flywheel's alone:
+                //
+                //     I_reduced = (I_engine * I_wheels) / (I_wheels + ratio^2 * I_engine)
+                //
+                // derived by solving w_engine' = ratio * w_wheel' for the torque that applies to both
+                // sides at once. Using the flywheel inertia by itself asks for the torque to drag the
+                // ENGINE to the target while ignoring that the same torque drags the WHEELS toward it
+                // as well - an overestimate of roughly 24x in first gear.
+                //
+                // That overestimate is not a small error. It made the coupling numerically unstable:
+                // the speed error grew by ~21x per step, the clutch bang-banged between plus and minus
+                // full capacity every 5 ms, and the driven tyres never settled anywhere near peak slip.
+                // The car accelerated poorly and felt like it was on ice, in every gear.
+                //
+                // Written in this form the loop is stable at any ratio, because the same ratio^2 that
+                // amplifies the wheel-side response also shrinks the inertia driving it.
+                float wheelSideInertia = Mathf.Max(drivenWheelInertia, TougeMath.Epsilon);
+                float ratioSquared = totalRatio * totalRatio;
+                float reducedInertia = engine.flywheelInertia * wheelSideInertia /
+                                       (wheelSideInertia + ratioSquared * engine.flywheelInertia);
+
+                // Clamping to clutch capacity is still what turns an instantaneous pedal release into
+                // a finite, tunable spike rather than an impulse.
+                float syncTorque = omegaError * reducedInertia / Mathf.Max(dt, TougeMath.Epsilon);
 
                 ClutchTorqueNm = Mathf.Clamp(syncTorque, -clutchCapacity, clutchCapacity);
                 ClutchSlipping = Mathf.Abs(syncTorque) > clutchCapacity;
