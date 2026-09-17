@@ -170,7 +170,7 @@ namespace Touge.Vehicle
             _powertrain.Step(spec, _input, AverageDrivenWheelOmega(), DrivenWheelInertia(), dt);
             DistributeDriveTorque(dt);
 
-            // 7. Tyre forces and wheel rotation. Uses the loads from step 2 and the torques from 5-6.
+            // 7. Tire forces and wheel rotation. Uses the loads from step 2 and the torques from 5-6.
             foreach (Wheel wheel in _wheels) wheel.UpdateTire(_rb, spec, _tireCurve, dt);
 
             // 8. Aerodynamics and any enabled stability cheat.
@@ -239,13 +239,20 @@ namespace Touge.Vehicle
 
                 float serviceBrake = brakeInput * axle.maxBrakeTorqueNm * biasFactor;
 
-                // ABS releases a wheel that has passed its slip threshold. Crude compared to a real
-                // pressure-modulating controller, but it is off by default and only exists so an
-                // assisted preset is possible later.
-                if (assists.absEnabled && speed > assists.absMinSpeed &&
-                    Mathf.Abs(wheel.SlipRatio) > assists.absSlipThreshold)
+                // ABS bleeds pressure in proportion to how far past the slip threshold the wheel has
+                // gone, rather than dumping it. A flat cut makes the wheel snap between locked and
+                // free and the car judders; releasing proportionally holds the wheel near the
+                // threshold, which is where the tyre makes its peak force AND keeps enough lateral
+                // grip to still steer.
+                //
+                // Off by default: locking the rear axle is a drift technique, not a fault. Turn it on
+                // for a car that should just stop and turn in.
+                if (assists.absEnabled && speed > assists.absMinSpeed)
                 {
-                    serviceBrake *= 0.15f;
+                    float threshold = Mathf.Max(assists.absSlipThreshold, TougeMath.Epsilon);
+                    float excess = Mathf.Abs(wheel.SlipRatio) - threshold;
+                    if (excess > 0f)
+                        serviceBrake *= 1f - Mathf.Clamp01(excess / threshold);
                 }
 
                 // The handbrake bypasses the bias entirely and acts only on the axle configured for

@@ -51,7 +51,7 @@ namespace Touge.Vehicle.Data
                  "2.2 = sharp drop past the peak, snappy and punishing.\n" +
                  "Must stay above 1.0 or the curve never peaks at all.")]
         [Range(1.05f, 2.5f)]
-        public float shapeC = 1.7f;
+        public float shapeC = 1.45f;
 
         [Tooltip("Curvature factor E, 0-1. Adjusts how rounded the shoulder of the curve is near the peak. " +
                  "Higher values flatten the approach to the peak and soften the falloff slightly.")]
@@ -60,7 +60,7 @@ namespace Touge.Vehicle.Data
 
         [Tooltip("Longitudinal slip ratio at which braking/driving force peaks. Dimensionless.\n" +
                  "Real tyres peak around 0.10-0.15. Larger values make wheelspin and lockup more gradual.")]
-        public float peakSlipRatio = 0.12f;
+        public float peakSlipRatio = 0.18f;
 
         [Tooltip("Lateral slip angle at which cornering force peaks. [degrees]\n" +
                  "Road tyres peak around 7-10 deg. LARGER values widen the window in which you can hold " +

@@ -41,7 +41,7 @@ namespace Touge.Vehicle.Data
         public bool absEnabled;
 
         [Tooltip("Slip ratio magnitude above which ABS releases that wheel's brake.")]
-        public float absSlipThreshold = 0.18f;
+        public float absSlipThreshold = 0.18f;   // Match peakSlipRatio: that is where peak force lives.
 
         [Tooltip("ABS is disabled below this speed so it cannot prevent the car coming to a stop. [m/s]")]
         public float absMinSpeed = 3f;
