@@ -972,7 +972,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13ab69700c8c41a418604dd7730e028f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roadWidth: 6.5
+  roadWidth: 20
   sampleSpacing: 2
   uvTilingPerMeter: 0.12
   autoBankFromCurvature: 1
@@ -985,6 +985,8 @@ MonoBehaviour:
   railHeight: 0.75
   railThickness: 0.2
   railOffset: 0.15
+  railEmbedDepth: 0.15
+  railPhysicsMaterial: {fileID: 0}
   roadMaterial: {fileID: 2100000, guid: d04d01ed5d3b7fe468adfaec298cf965, type: 2}
   vergeMaterial: {fileID: 2100000, guid: 4a1a2e0e6cb004c408e9247863597a07, type: 2}
   railMaterial: {fileID: 2100000, guid: 861395343b46bc948af053256b693e34, type: 2}

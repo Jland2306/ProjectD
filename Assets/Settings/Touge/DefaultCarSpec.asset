@@ -125,6 +125,9 @@ MonoBehaviour:
     autoUpshiftRpm: 6800
     autoDownshiftRpm: 2800
     clutchMaxTorqueNm: 320
+    autoClutchEnabled: 1
+    autoClutchEngageRpm: 2500
+    autoClutchSlipShare: 0.6
     clutchEngagementCurve:
       serializedVersion: 2
       m_Curve:
@@ -202,9 +205,9 @@ MonoBehaviour:
     peakFrictionCoefficient: 1.05
     frontGripScale: 1
     rearGripScale: 0.96
-    shapeC: 1.7
+    shapeC: 1.45
     curvatureE: 0.6
-    peakSlipRatio: 0.12
+    peakSlipRatio: 0.18
     peakSlipAngleDeg: 8.5
     referenceLoadN: 2330
     loadSensitivity: 0.22
