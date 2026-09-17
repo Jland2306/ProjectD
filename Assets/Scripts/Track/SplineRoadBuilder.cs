@@ -25,7 +25,7 @@ namespace Touge.Track
     {
         [Header("Road surface")]
         [Tooltip("Full width of the driving surface. [m] A real touge is narrow - 6-7 m is about right.")]
-        public float roadWidth = 6.5f;
+        public float roadWidth = 9f;
 
         [Tooltip("Distance between generated cross-sections. [m]\n" +
                  "Smaller = smoother hairpins and more triangles. 2 m is a good greybox compromise.")]
@@ -70,6 +70,16 @@ namespace Touge.Track
 
         [Tooltip("How far the barrier sits outside the road edge. [m]")]
         public float railOffset = 0.15f;
+
+        [Tooltip("How far the barrier base is sunk below the road surface, in metres. Buries the " +
+                 "underside instead of leaving it coplanar with the road, which removes both the " +
+                 "seam the car could catch on and the z-fighting.")]
+        public float railEmbedDepth = 0.15f;
+
+        [Tooltip("Physics material for the barriers. A frictionless material is what stops the car " +
+                 "catching on a wall and being spun round by it - with friction, a glancing hit grabs " +
+                 "the bodywork and yaws the car. Leave empty to use the project default.")]
+        public PhysicsMaterial railPhysicsMaterial;
 
         [Header("Materials")]
         public Material roadMaterial;
@@ -134,7 +144,7 @@ namespace Touge.Track
 
             AssignMesh("RoadSurface", RoadMesh, roadMaterial, true);
             AssignMesh("Verge", VergeMesh, vergeMaterial, true);
-            AssignMesh("Guardrails", RailMesh, railMaterial, true);
+            AssignMesh("Guardrails", RailMesh, railMaterial, true, railPhysicsMaterial);
         }
 
         // -----------------------------------------------------------------------------------------
@@ -372,18 +382,27 @@ namespace Touge.Track
         }
 
         /// <summary>
-        /// Guardrails on both edges, built as a solid extrusion rather than a plane so the car cannot
-        /// tunnel through at speed.
+        /// Guardrails on both edges, built as a CLOSED solid.
+        ///
+        /// Closure matters more than it looks. An open shell - inner face, top and outer face, with
+        /// no underside and no end caps - has a genuine interior as far as a non-convex MeshCollider
+        /// is concerned. A car can reach that interior through the open bottom or an open end and is
+        /// then pushed by the inner and outer faces at once, which reads in game as being swallowed
+        /// by the barrier and wedged there.
+        ///
+        /// The base is also sunk slightly below the road so the underside is buried rather than
+        /// coplanar with the road surface, which removes both the gap and the z-fighting.
         /// </summary>
         private Mesh BuildRailMesh()
         {
             int count = _frames.Count;
+
             // Eight vertices per cross-section: inner/outer x bottom/top, on each side.
             Vector3[] vertices = new Vector3[count * 8];
             Vector2[] uvs = new Vector2[count * 8];
 
-            // Three quads per side per segment: inner face, top face, outer face.
-            int[] triangles = new int[(count - 1) * 36];
+            // Four quads per side per segment (inner, top, outer, bottom), plus four end caps.
+            int[] triangles = new int[(count - 1) * 48 + 24];
 
             float half = roadWidth * 0.5f;
 
@@ -397,15 +416,15 @@ namespace Touge.Track
                 float rightInner = half + railOffset;
                 float rightOuter = rightInner + railThickness;
 
-                vertices[b] = LocalRailPoint(frame, leftInner, 0f);
+                vertices[b] = LocalRailPoint(frame, leftInner, -railEmbedDepth);
                 vertices[b + 1] = LocalRailPoint(frame, leftInner, railHeight);
                 vertices[b + 2] = LocalRailPoint(frame, leftOuter, railHeight);
-                vertices[b + 3] = LocalRailPoint(frame, leftOuter, 0f);
+                vertices[b + 3] = LocalRailPoint(frame, leftOuter, -railEmbedDepth);
 
-                vertices[b + 4] = LocalRailPoint(frame, rightInner, 0f);
+                vertices[b + 4] = LocalRailPoint(frame, rightInner, -railEmbedDepth);
                 vertices[b + 5] = LocalRailPoint(frame, rightInner, railHeight);
                 vertices[b + 6] = LocalRailPoint(frame, rightOuter, railHeight);
-                vertices[b + 7] = LocalRailPoint(frame, rightOuter, 0f);
+                vertices[b + 7] = LocalRailPoint(frame, rightOuter, -railEmbedDepth);
 
                 float v = frame.Distance * uvTilingPerMeter;
                 for (int k = 0; k < 8; k++) uvs[b + k] = new Vector2((k % 2 == 0) ? 0f : 1f, v);
@@ -415,17 +434,31 @@ namespace Touge.Track
             for (int i = 0; i < count - 1; i++)
             {
                 int b = i * 8;
+                int n = b + 8;   // same four vertices on the next cross-section
 
-                // Left rail: inner face, top, outer face.
-                AddQuad(triangles, ref index, b + 0, b + 1, b + 8, b + 9);
-                AddQuad(triangles, ref index, b + 1, b + 2, b + 9, b + 10);
-                AddQuad(triangles, ref index, b + 2, b + 3, b + 10, b + 11);
+                // Left rail, walking the cross-section round: inner, top, outer, bottom.
+                AddQuad(triangles, ref index, b + 0, b + 1, n + 0, n + 1);
+                AddQuad(triangles, ref index, b + 1, b + 2, n + 1, n + 2);
+                AddQuad(triangles, ref index, b + 2, b + 3, n + 2, n + 3);
+                AddQuad(triangles, ref index, b + 3, b + 0, n + 3, n + 0);
 
-                // Right rail, wound opposite so its inner face points back at the road.
-                AddQuad(triangles, ref index, b + 5, b + 4, b + 13, b + 12);
-                AddQuad(triangles, ref index, b + 6, b + 5, b + 14, b + 13);
-                AddQuad(triangles, ref index, b + 7, b + 6, b + 15, b + 14);
+                // Right rail, wound the other way so its inner face points back at the road.
+                AddQuad(triangles, ref index, b + 5, b + 4, n + 5, n + 4);
+                AddQuad(triangles, ref index, b + 6, b + 5, n + 6, n + 5);
+                AddQuad(triangles, ref index, b + 7, b + 6, n + 7, n + 6);
+                AddQuad(triangles, ref index, b + 4, b + 7, n + 4, n + 7);
             }
+
+            // End caps, so the barrier is sealed at the start line and the finish.
+            int last = (count - 1) * 8;
+            AddTriangle(triangles, ref index, 0, 1, 2);
+            AddTriangle(triangles, ref index, 0, 2, 3);
+            AddTriangle(triangles, ref index, 4, 6, 5);
+            AddTriangle(triangles, ref index, 4, 7, 6);
+            AddTriangle(triangles, ref index, last + 0, last + 2, last + 1);
+            AddTriangle(triangles, ref index, last + 0, last + 3, last + 2);
+            AddTriangle(triangles, ref index, last + 4, last + 5, last + 6);
+            AddTriangle(triangles, ref index, last + 4, last + 6, last + 7);
 
             return CreateMesh("TougeGuardrails", vertices, triangles, uvs);
         }
@@ -434,6 +467,13 @@ namespace Touge.Track
         {
             Vector3 world = frame.Center + frame.Right * lateralOffset + frame.Up * height;
             return transform.InverseTransformPoint(world);
+        }
+
+        private static void AddTriangle(int[] triangles, ref int index, int a, int b, int c)
+        {
+            triangles[index++] = a;
+            triangles[index++] = b;
+            triangles[index++] = c;
         }
 
         private static void AddQuad(int[] triangles, ref int index, int a, int b, int c, int d)
@@ -463,7 +503,8 @@ namespace Touge.Track
         }
 
         /// <summary>Create or update the child object that renders and collides one generated mesh.</summary>
-        private void AssignMesh(string childName, Mesh mesh, Material material, bool addCollider)
+        private void AssignMesh(string childName, Mesh mesh, Material material, bool addCollider,
+                                PhysicsMaterial physicsMaterial = null)
         {
             Transform child = transform.Find(childName);
 
@@ -498,6 +539,7 @@ namespace Touge.Track
                 collider = child.gameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = null;      // Force the collider to rebuild from the new mesh data.
             collider.sharedMesh = mesh;
+            if (physicsMaterial != null) collider.sharedMaterial = physicsMaterial;
         }
 
         private void OnDrawGizmosSelected()

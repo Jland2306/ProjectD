@@ -28,10 +28,10 @@ namespace Touge.Editor
         private const string TrackAssetPath = CarSpecFactory.SettingsFolder + "/AkinaDownhill.asset";
 
         /// <summary>Starting elevation of the pass. [m]</summary>
-        private const float StartElevation = 95f;
+        private const float StartElevation = 190f;
 
         /// <summary>Roughly how far apart checkpoints are placed along the course. [m]</summary>
-        private const float CheckpointSpacing = 120f;
+        private const float CheckpointSpacing = 200f;
 
         /// <summary>One authored move along the course.</summary>
         private struct CourseMove
@@ -62,29 +62,37 @@ namespace Touge.Editor
         /// <summary>
         /// The pass layout.
         ///
-        /// Two hairpins, three linked esses, two fast sweepers and a long finishing straight, over
-        /// roughly 730 m with about 85 m of descent (an average grade near 12%, which is steep but
-        /// believable for a Japanese mountain pass).
+        /// Roughly 1.7 km with 170 m of descent at a 10% average grade: two hairpins, five linked
+        /// esses, three sweepers of increasing radius and a long run to the line.
         ///
-        /// Headings run: 0 -> 60 -> -20 -> 70 -> 0 -> 180 (hairpin) -> 135 -> 205 -> 30. The hairpins
-        /// double the road back on itself with 30 m and 32 m of lateral separation respectively,
-        /// comfortably clear of the ~14 m footprint of road plus verge.
+        /// The layout is verified to be free of self-intersection before it ships. A course of
+        /// switchbacks folds back on itself by construction, so the constraint is that any two parts
+        /// of the course more than 60 m apart ALONG the road stay further apart in plan than the road
+        /// plus both verges - 17 m at the current width. This layout's tightest approach is 40 m.
+        ///
+        /// That constraint is why there are two hairpins and not three. Three same-handed hairpins
+        /// rotate the course through enough total heading that the finish runs back into the opening
+        /// sector; a version with three closed to 6.7 m, well inside the road's own footprint.
         /// </summary>
         private static readonly CourseMove[] Course =
         {
-            CourseMove.Straight(70f, 10f, "Start straight"),
-            CourseMove.Arc(90f, 60f, 11f, "Fast sweeper right"),
-            CourseMove.Straight(40f, 10f, "Short chute"),
-            CourseMove.Arc(28f, -80f, 13f, "Esse 1 - left"),
-            CourseMove.Arc(26f, 90f, 13f, "Esse 2 - right"),
-            CourseMove.Arc(30f, -70f, 13f, "Esse 3 - left"),
-            CourseMove.Straight(50f, 10f, "Approach to hairpin 1"),
-            CourseMove.Arc(15f, 180f, 15f, "HAIRPIN 1 - right"),
-            CourseMove.Straight(60f, 10f, "Back straight"),
-            CourseMove.Arc(110f, -45f, 11f, "Fast sweeper left"),
-            CourseMove.Arc(24f, 70f, 13f, "Approach to hairpin 2"),
-            CourseMove.Arc(16f, -175f, 15f, "HAIRPIN 2 - left"),
-            CourseMove.Straight(90f, 10f, "Run to the line")
+            CourseMove.Straight(140f, 8f, "Start straight"),
+            CourseMove.Arc(180f, 60f, 10f, "Opening sweeper right"),
+            CourseMove.Straight(80f, 9f, "Chute"),
+            CourseMove.Arc(55f, -80f, 12f, "Esse 1 - left"),
+            CourseMove.Arc(50f, 90f, 12f, "Esse 2 - right"),
+            CourseMove.Arc(58f, -70f, 12f, "Esse 3 - left"),
+            CourseMove.Straight(100f, 10f, "Approach to hairpin 1"),
+            CourseMove.Arc(20f, 180f, 14f, "HAIRPIN 1 - right"),
+            CourseMove.Straight(120f, 10f, "Back straight"),
+            CourseMove.Arc(220f, -45f, 9f, "Fast sweeper left"),
+            CourseMove.Arc(48f, 70f, 12f, "Approach to hairpin 2"),
+            CourseMove.Arc(22f, -175f, 14f, "HAIRPIN 2 - left"),
+            CourseMove.Straight(100f, 9f, "Long chute"),
+            CourseMove.Arc(160f, 50f, 9f, "Sweeper right"),
+            CourseMove.Arc(52f, -60f, 11f, "Esse 4 - left"),
+            CourseMove.Arc(48f, 55f, 11f, "Esse 5 - right"),
+            CourseMove.Straight(130f, 8f, "Run to the line")
         };
 
         [MenuItem("Touge/Build Mountain Pass Scene", false, 21)]
@@ -131,6 +139,8 @@ namespace Touge.Editor
             road.roadMaterial = TougeSceneBuilder.CreateMaterial("Greybox_Road", new Color(0.26f, 0.26f, 0.28f));
             road.vergeMaterial = TougeSceneBuilder.CreateMaterial("Greybox_Verge", new Color(0.22f, 0.26f, 0.18f));
             road.railMaterial = TougeSceneBuilder.CreateMaterial("Greybox_Rail", new Color(0.72f, 0.72f, 0.74f));
+            road.roadWidth = 9f;
+            road.railPhysicsMaterial = CreateSlipperyBarrierMaterial();
             road.Rebuild();
 
             TougeSceneBuilder.SetLayerRecursive(trackRoot, groundLayer);
@@ -390,6 +400,35 @@ namespace Touge.Editor
             existing.RecalculateBounds();
             EditorUtility.SetDirty(existing);
             return existing;
+        }
+
+        /// <summary>
+        /// A frictionless physics material for the barriers.
+        ///
+        /// Without it a glancing hit grabs the bodywork and yaws the car, which reads as the barrier
+        /// grabbing and holding you. Minimum combine means the pair is frictionless whatever the car
+        /// is wearing, so this one asset governs every wall contact.
+        /// </summary>
+        private static PhysicsMaterial CreateSlipperyBarrierMaterial()
+        {
+            const string path = CarSpecFactory.SettingsFolder + "/BarrierPhysics.physicsMaterial";
+
+            PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (existing != null) return existing;
+
+            CarSpecFactory.EnsureFolder(CarSpecFactory.SettingsFolder);
+
+            PhysicsMaterial material = new PhysicsMaterial("BarrierPhysics")
+            {
+                dynamicFriction = 0f,
+                staticFriction = 0f,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+                bounciness = 0.05f,
+                bounceCombine = PhysicsMaterialCombine.Minimum
+            };
+
+            AssetDatabase.CreateAsset(material, path);
+            return material;
         }
 
         /// <summary>Repoint a generated child's renderer and collider at the persisted mesh.</summary>
