@@ -36,8 +36,22 @@ namespace Touge.Editor
                 "Move knots, then rebuild.",
                 MessageType.Info);
 
+            if (builder.railPhysicsMaterial == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "The guardrails have no physics material, so they are running on the project " +
+                    "default: full friction and no bounce. That is what makes a wall grab the car " +
+                    "and hold it. Use Touge > Fix Track Barrier Physics, or rebuild.",
+                    MessageType.Warning);
+            }
+
             if (GUILayout.Button("Rebuild Road", GUILayout.Height(28f)))
             {
+                // Before the geometry, not after: the rebuild reads railPhysicsMaterial when it
+                // assigns the guardrail collider, so a track built without one would otherwise come
+                // back with bare barriers again.
+                TrackSplineFactory.ApplyBarrierPhysics(builder);
+
                 builder.Rebuild();
 
                 // The meshes must be written back to their assets, or the scene will reference

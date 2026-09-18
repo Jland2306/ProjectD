@@ -704,7 +704,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1541996777}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 221b16cd9e30f40469a875d3efaa219e, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -986,7 +986,7 @@ MonoBehaviour:
   railThickness: 0.2
   railOffset: 0.15
   railEmbedDepth: 0.15
-  railPhysicsMaterial: {fileID: 0}
+  railPhysicsMaterial: {fileID: 13400000, guid: 221b16cd9e30f40469a875d3efaa219e, type: 2}
   roadMaterial: {fileID: 2100000, guid: d04d01ed5d3b7fe468adfaec298cf965, type: 2}
   vergeMaterial: {fileID: 2100000, guid: 4a1a2e0e6cb004c408e9247863597a07, type: 2}
   railMaterial: {fileID: 2100000, guid: 861395343b46bc948af053256b693e34, type: 2}

@@ -81,6 +81,16 @@ namespace Touge.Vehicle.Data
         [Tooltip("Extra distance cast beyond full droop, used to detect ground just out of reach. [m]")]
         public float castMargin = 0.05f;
 
+        [Tooltip("Steepest surface the suspension will accept as drivable ground. [degrees]\n" +
+                 "Anything steeper - a guardrail face, a wall, the side of a rock - is ignored by the " +
+                 "cast and the wheel looks past it for real road. Without this a wheel that brushes a " +
+                 "barrier treats the wall as ground: the contact normal comes back horizontal, the tyre " +
+                 "fires its lateral force vertically, and the spring reads a huge compression and blows " +
+                 "through the bump stop. That is what pins the car inside a barrier.\n" +
+                 "Must sit above the steepest road bank and below vertical. 60 is a good default.")]
+        [Range(0f, 89f)]
+        public float maxDrivableSlopeDeg = 60f;
+
         /// <summary>Suspension settings for the requested axle.</summary>
         public AxleSuspensionSpec ForAxle(bool isFront) => isFront ? front : rear;
     }

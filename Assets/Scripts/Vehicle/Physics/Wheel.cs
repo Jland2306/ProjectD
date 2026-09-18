@@ -140,7 +140,7 @@ namespace Touge.Vehicle.Physics
             float freeLength = sus.restLength + axle.wheelRadius;
             float castLength = freeLength + shared.castMargin;
 
-            bool hit = CastGround(mount, -SuspensionUp, castLength, shared, out RaycastHit hitInfo);
+            bool hit = CastGround(mount, -SuspensionUp, SuspensionUp, castLength, shared, out RaycastHit hitInfo);
 
             if (!hit)
             {
@@ -375,26 +375,84 @@ namespace Touge.Vehicle.Physics
             SpinAngleDeg = Mathf.Repeat(SpinAngleDeg + omega * Mathf.Rad2Deg * dt, 360f);
         }
 
-        /// <summary>Sphere cast when a radius is configured, otherwise a cheaper ray cast.</summary>
-        private static bool CastGround(Vector3 origin, Vector3 direction, float length,
+        /// <summary>
+        /// Scratch buffer for the ground cast.
+        ///
+        /// Static and shared by all four corners. That is safe here because the wheels are stepped
+        /// one after another inside a single FixedUpdate on the main thread (see
+        /// <see cref="CarController"/>), so only one cast is ever in flight and its results are fully
+        /// consumed before the next call. Determinism is unaffected - every cast overwrites the
+        /// entries it reads.
+        /// </summary>
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
+
+        /// <summary>
+        /// Find the nearest DRIVABLE surface beneath the wheel.
+        ///
+        /// "Drivable" is the important word, and taking the closest hit is not good enough. The
+        /// guardrails sit on the same layer as the road, and the sphere cast readily catches their
+        /// vertical inner face whenever the car runs alongside one. When that happened the wheel
+        /// treated a wall as ground, and three things went wrong at once:
+        ///
+        ///   - the contact normal came back horizontal, so the contact-plane basis tipped on its
+        ///     side and the tyre fired its LATERAL force vertically;
+        ///   - the ground distance measured along the strut collapsed, so the spring read a huge
+        ///     compression, ran past maxTravel and fired the 250 kN/m bump stop;
+        ///   - all of that was applied at a point on the wall face.
+        ///
+        /// The result was tens of kilonewtons throwing the car into the barrier and holding it
+        /// there, which is the "stuck inside the border" bug.
+        ///
+        /// Rejecting by surface ANGLE rather than by layer keeps this correct however the scene is
+        /// authored, and considering every hit along the sweep rather than just the first means a
+        /// wheel that is touching a rail and the road at the same time still finds the road.
+        /// </summary>
+        private static bool CastGround(Vector3 origin, Vector3 direction, Vector3 up, float length,
                                        SuspensionSpec shared, out RaycastHit hitInfo)
         {
+            hitInfo = default;
+
+            int count;
             if (shared.castRadius > TougeMath.Epsilon)
             {
                 // Cast the sphere from one radius back up the strut so it cannot start already
                 // intersecting the road surface, which would report a zero-distance hit.
-                return UnityEngine.Physics.SphereCast(
+                count = UnityEngine.Physics.SphereCastNonAlloc(
                     origin + direction * -shared.castRadius,
                     shared.castRadius,
                     direction,
-                    out hitInfo,
+                    GroundHits,
                     length + shared.castRadius,
                     shared.groundMask,
                     QueryTriggerInteraction.Ignore);
             }
+            else
+            {
+                count = UnityEngine.Physics.RaycastNonAlloc(
+                    origin, direction, GroundHits, length, shared.groundMask,
+                    QueryTriggerInteraction.Ignore);
+            }
 
-            return UnityEngine.Physics.Raycast(
-                origin, direction, out hitInfo, length, shared.groundMask, QueryTriggerInteraction.Ignore);
+            float minNormalDot = Mathf.Cos(Mathf.Clamp(shared.maxDrivableSlopeDeg, 0f, 89f) * Mathf.Deg2Rad);
+            float nearest = float.MaxValue;
+            bool found = false;
+
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit candidate = GroundHits[i];
+
+                // Zero distance means the cast began already inside that collider, and PhysX then
+                // reports no usable point or normal. There is nothing to do with such a hit.
+                if (candidate.distance <= 0f) continue;
+                if (candidate.distance >= nearest) continue;
+                if (Vector3.Dot(candidate.normal, up) < minNormalDot) continue;
+
+                nearest = candidate.distance;
+                hitInfo = candidate;
+                found = true;
+            }
+
+            return found;
         }
 
         /// <summary>Reset all transient state. Used when respawning or teleporting the car.</summary>

@@ -140,7 +140,7 @@ namespace Touge.Editor
             road.vergeMaterial = TougeSceneBuilder.CreateMaterial("Greybox_Verge", new Color(0.22f, 0.26f, 0.18f));
             road.railMaterial = TougeSceneBuilder.CreateMaterial("Greybox_Rail", new Color(0.72f, 0.72f, 0.74f));
             road.roadWidth = 9f;
-            road.railPhysicsMaterial = CreateSlipperyBarrierMaterial();
+            road.railPhysicsMaterial = EnsureBarrierMaterial();
             road.Rebuild();
 
             TougeSceneBuilder.SetLayerRecursive(trackRoot, groundLayer);
@@ -402,33 +402,125 @@ namespace Touge.Editor
             return existing;
         }
 
-        /// <summary>
-        /// A frictionless physics material for the barriers.
-        ///
-        /// Without it a glancing hit grabs the bodywork and yaws the car, which reads as the barrier
-        /// grabbing and holding you. Minimum combine means the pair is frictionless whatever the car
-        /// is wearing, so this one asset governs every wall contact.
-        /// </summary>
-        private static PhysicsMaterial CreateSlipperyBarrierMaterial()
-        {
-            const string path = CarSpecFactory.SettingsFolder + "/BarrierPhysics.physicsMaterial";
+        /// <summary>Path of the shared barrier physics material.</summary>
+        public const string BarrierMaterialPath =
+            CarSpecFactory.SettingsFolder + "/BarrierPhysics.physicsMaterial";
 
-            PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
-            if (existing != null) return existing;
+        /// <summary>
+        /// The physics material every barrier wears: frictionless, and slightly elastic.
+        ///
+        /// FRICTION. A wall with grip grabs the bodywork on a glancing hit and yaws the car into it,
+        /// which reads as the barrier catching and holding you. Minimum combine means the PAIR is
+        /// frictionless whatever the car is wearing, so this one asset governs every wall contact.
+        ///
+        /// BOUNCE. Maximum combine, not minimum. The car's own collider has no material and so
+        /// defaults to zero bounciness, and minimum combine takes min(0, x) - which is zero for any
+        /// value set here. The bounciness field was therefore dead, and the barriers absorbed a hit
+        /// completely and left the car resting against the wall with nothing to separate it. A small
+        /// restitution under maximum combine pushes the car back off the wall on contact, which is
+        /// what keeps a scrape from turning into being parked in the barrier.
+        ///
+        /// Kept low on purpose: this is a nudge that guarantees separation, not a trampoline. Unity's
+        /// bounce threshold (Project Settings > Physics, 2 m/s here) already suppresses it entirely
+        /// below walking pace, so a car pressed gently against a rail still just sits there.
+        /// </summary>
+        public static PhysicsMaterial EnsureBarrierMaterial()
+        {
+            PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(BarrierMaterialPath);
+            if (existing != null)
+            {
+                // Refresh the values in place. An asset created by an earlier version of this method
+                // is frictionless but cannot bounce, and silently leaving it alone would mean the fix
+                // never reaches a project that already has one.
+                if (existing.bounceCombine != PhysicsMaterialCombine.Maximum ||
+                    existing.bounciness < 0.2f)
+                {
+                    ConfigureBarrierMaterial(existing);
+                    EditorUtility.SetDirty(existing);
+                }
+                return existing;
+            }
 
             CarSpecFactory.EnsureFolder(CarSpecFactory.SettingsFolder);
 
-            PhysicsMaterial material = new PhysicsMaterial("BarrierPhysics")
-            {
-                dynamicFriction = 0f,
-                staticFriction = 0f,
-                frictionCombine = PhysicsMaterialCombine.Minimum,
-                bounciness = 0.05f,
-                bounceCombine = PhysicsMaterialCombine.Minimum
-            };
-
-            AssetDatabase.CreateAsset(material, path);
+            PhysicsMaterial material = new PhysicsMaterial("BarrierPhysics");
+            ConfigureBarrierMaterial(material);
+            AssetDatabase.CreateAsset(material, BarrierMaterialPath);
             return material;
+        }
+
+        private static void ConfigureBarrierMaterial(PhysicsMaterial material)
+        {
+            material.dynamicFriction = 0f;
+            material.staticFriction = 0f;
+            material.frictionCombine = PhysicsMaterialCombine.Minimum;
+            material.bounciness = 0.25f;
+            material.bounceCombine = PhysicsMaterialCombine.Maximum;
+        }
+
+        /// <summary>
+        /// Put the barrier material on a builder and on the guardrail collider it has already
+        /// generated.
+        ///
+        /// Both halves are needed. Setting only the builder field does nothing until the next
+        /// rebuild, and a scene built before the material existed has bare guardrails running on the
+        /// project default - full friction, no bounce - which is exactly the setup that glues the car
+        /// to a wall.
+        /// </summary>
+        public static bool ApplyBarrierPhysics(SplineRoadBuilder road)
+        {
+            if (road == null) return false;
+
+            PhysicsMaterial material = EnsureBarrierMaterial();
+            bool changed = false;
+
+            if (road.railPhysicsMaterial != material)
+            {
+                road.railPhysicsMaterial = material;
+                EditorUtility.SetDirty(road);
+                changed = true;
+            }
+
+            Transform rails = road.transform.Find("Guardrails");
+            if (rails != null && rails.TryGetComponent(out MeshCollider collider) &&
+                collider.sharedMaterial != material)
+            {
+                collider.sharedMaterial = material;
+                EditorUtility.SetDirty(collider);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// Repair the barriers in the open scene without regenerating any geometry.
+        ///
+        /// Rebuilding the road also works, but it rewrites the mesh assets, and a track that is
+        /// mid-playtest does not need new geometry - it needs the walls to stop holding onto the car.
+        /// </summary>
+        [MenuItem("Touge/Fix Track Barrier Physics", false, 22)]
+        public static void FixBarrierPhysicsMenuItem()
+        {
+            SplineRoadBuilder[] builders = Object.FindObjectsByType<SplineRoadBuilder>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            if (builders.Length == 0)
+            {
+                Debug.LogWarning("[Touge] No SplineRoadBuilder in the open scene. " +
+                                 "Open the track scene first.");
+                return;
+            }
+
+            int repaired = 0;
+            foreach (SplineRoadBuilder builder in builders)
+                if (ApplyBarrierPhysics(builder)) repaired++;
+
+            AssetDatabase.SaveAssets();
+            if (repaired > 0) EditorSceneManager.MarkSceneDirty(builders[0].gameObject.scene);
+
+            Debug.Log($"[Touge] Barrier physics applied to {repaired} of {builders.Length} " +
+                      "track(s). Save the scene to keep it.");
         }
 
         /// <summary>Repoint a generated child's renderer and collider at the persisted mesh.</summary>
