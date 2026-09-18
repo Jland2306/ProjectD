@@ -51,6 +51,15 @@ namespace Touge.Vehicle.Data
         [Tooltip("Constant friction torque, always opposing rotation. [N*m]")]
         public float frictionTorqueNm = 12f;
 
+        [Tooltip("How much of the engine braking drag is cancelled as the throttle opens, 0-1.\n" +
+                 "A published torque curve is already NET of internal friction and pumping at wide open " +
+                 "throttle, so subtracting the full drag on top of it double-counts and quietly removes a " +
+                 "large slice of peak torque. 1 = drag acts only off-throttle (most correct for a measured " +
+                 "curve), 0 = the old behaviour. Lift-off oversteer is unaffected either way, because at a " +
+                 "closed throttle this term does nothing.")]
+        [Range(0f, 1f)]
+        public float engineBrakingThrottleRelief = 0.85f;
+
         [Tooltip("Proportional gain for the idle governor - how hard it adds throttle to hold idleRpm. " +
                  "Too high oscillates, too low stalls at rest.")]
         public float idleGovernorGain = 0.0025f;

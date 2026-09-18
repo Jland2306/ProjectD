@@ -19,7 +19,7 @@ namespace Touge.Vehicle.Data
         public float reverseRatio = 3.484f;
 
         [Tooltip("Final drive ratio at the differential.")]
-        public float finalDrive = 4.30f;
+        public float finalDrive = 4.70f;
 
         [Tooltip("Driveline mechanical efficiency, 0-1. Accounts for gear mesh and bearing losses.")]
         [Range(0.7f, 1f)]
@@ -27,17 +27,17 @@ namespace Touge.Vehicle.Data
 
         [Tooltip("Torque interruption time during an automatic-mode shift. [s]\n" +
                  "In manual mode the player's own clutch use governs this instead.")]
-        public float shiftTimeSeconds = 0.25f;
+        public float shiftTimeSeconds = 0.18f;
 
         [Tooltip("Which mode the car starts in.")]
         public TransmissionMode defaultMode = TransmissionMode.Manual;
 
         [Tooltip("Automatic mode upshifts above this engine speed. [rpm]")]
-        public float autoUpshiftRpm = 6800f;
+        public float autoUpshiftRpm = 7350f;
 
         [Tooltip("Automatic mode downshifts below this engine speed. [rpm]\n" +
                  "Must be low enough that an upshift does not immediately trigger a downshift.")]
-        public float autoDownshiftRpm = 2800f;
+        public float autoDownshiftRpm = 3600f;
 
         [Header("Clutch")]
         [Tooltip("Maximum torque the clutch can transmit before it slips. [N*m]\n" +

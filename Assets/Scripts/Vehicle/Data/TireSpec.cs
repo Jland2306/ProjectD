@@ -41,7 +41,7 @@ namespace Touge.Vehicle.Data
         [Tooltip("Grip multiplier applied to the rear axle only.\n" +
                  "PRIMARY BALANCE LEVER: below 1.0 the car is loose and rotates easily; " +
                  "above 1.0 it pushes and resists drifting.")]
-        public float rearGripScale = 0.96f;
+        public float rearGripScale = 0.94f;
 
         [Header("Curve shape")]
         [Tooltip("Shape factor C. The main falloff control: how much grip is LOST once you exceed " +
@@ -51,7 +51,7 @@ namespace Touge.Vehicle.Data
                  "2.2 = sharp drop past the peak, snappy and punishing.\n" +
                  "Must stay above 1.0 or the curve never peaks at all.")]
         [Range(1.05f, 2.5f)]
-        public float shapeC = 1.45f;
+        public float shapeC = 1.40f;
 
         [Tooltip("Curvature factor E, 0-1. Adjusts how rounded the shoulder of the curve is near the peak. " +
                  "Higher values flatten the approach to the peak and soften the falloff slightly.")]
@@ -65,7 +65,7 @@ namespace Touge.Vehicle.Data
         [Tooltip("Lateral slip angle at which cornering force peaks. [degrees]\n" +
                  "Road tyres peak around 7-10 deg. LARGER values widen the window in which you can hold " +
                  "a drift, because the tyre stays near peak force over a broader angle range.")]
-        public float peakSlipAngleDeg = 8.5f;
+        public float peakSlipAngleDeg = 9.5f;
 
         [Header("Load sensitivity")]
         [Tooltip("Load at which peakFrictionCoefficient is exactly achieved. [N]\n" +
@@ -90,7 +90,7 @@ namespace Touge.Vehicle.Data
                  "Models sidewall flex. This is the main thing that keeps the tyre stable at high physics " +
                  "rates and stops the lateral force oscillating. 0.3-0.6 m is typical. " +
                  "Too high feels vague and delayed; too low reintroduces jitter.")]
-        public float relaxationLength = 0.45f;
+        public float relaxationLength = 0.32f;
 
         [Tooltip("Below this speed the model blends toward a simple velocity-damping contact that holds " +
                  "the car still. [m/s]\n" +

@@ -29,7 +29,7 @@ namespace Touge.Vehicle.Data
         [Tooltip("Moment of inertia about each body-local axis. [kg*m^2]\n" +
                  "X = pitch, Y = yaw, Z = roll.\n" +
                  "Yaw (Y) is the drift-critical one: lower = the car rotates and stops rotating faster.")]
-        public Vector3 inertiaTensor = new Vector3(1250f, 1350f, 350f);
+        public Vector3 inertiaTensor = new Vector3(1250f, 1200f, 350f);
 
         [Tooltip("Aerodynamic drag, expressed as the force coefficient k in F = k * v^2. [N/(m/s)^2]\n" +
                  "k = 0.5 * airDensity * Cd * frontalArea. For a boxy 80s hatch: ~0.5*1.225*0.36*1.8 = 0.40")]

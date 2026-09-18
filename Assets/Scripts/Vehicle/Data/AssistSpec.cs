@@ -21,9 +21,16 @@ namespace Touge.Vehicle.Data
         [Tooltip("Counter-steer assist strength, 0-1. 0 = fully off, raw.\n" +
                  "Adds steering INPUT proportional to the rear slip angle - it does not apply any force " +
                  "or torque to the car, so the physics stays honest. Useful on keyboard, where you cannot " +
-                 "hold a partial counter-steer angle.")]
+                 "hold a partial counter-steer angle.\n" +
+                 "0.45 covers roughly half the lock a slide needs and leaves the rest to the driver, which " +
+                 "is what makes a drift holdable on a digital axis. Set to 0 for the raw car.")]
         [Range(0f, 1f)]
-        public float counterSteerAssist;
+        public float counterSteerAssist = 0.45f;
+
+        [Tooltip("Body slip angle below which the counter-steer assist stays asleep. [degrees]\n" +
+                 "Every quick corner carries a few degrees of slip. Without a deadband the assist trims " +
+                 "opposite lock into ordinary cornering and the car feels like it understeers on turn-in.")]
+        public float counterSteerAssistDeadbandDeg = 6f;
 
         [Tooltip("Upper limit on how much lock the counter-steer assist may add, as a fraction of full lock.")]
         [Range(0f, 1f)]

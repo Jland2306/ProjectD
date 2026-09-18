@@ -46,9 +46,18 @@ namespace Touge.Vehicle
             CounterSteerAssistDeg = 0f;
             if (assists.counterSteerAssist > TougeMath.Epsilon)
             {
+                // Ignore the few degrees of body slip that every quick corner carries. Without this
+                // deadband the assist trims opposite lock into ordinary cornering, which reads as
+                // understeer on turn-in - it quietly fights the driver at exactly the moment the car
+                // should feel sharpest. Past the deadband the car is genuinely sideways and the
+                // assist is doing what a driver's hands would.
+                float deadband = Mathf.Max(0f, assists.counterSteerAssistDeadbandDeg);
+                float slideAngle = Mathf.Sign(driftAngleDeg) *
+                                   Mathf.Max(0f, Mathf.Abs(driftAngleDeg) - deadband);
+
                 // Steer INTO the slide: a positive drift angle (nose right of travel, tail out left)
                 // calls for left lock, hence the negation.
-                float desired = -driftAngleDeg * assists.counterSteerAssist;
+                float desired = -slideAngle * assists.counterSteerAssist;
                 float limit = steering.maxSteerAngleDeg * assists.counterSteerAssistMaxFraction;
                 CounterSteerAssistDeg = Mathf.Clamp(desired, -limit, limit);
 
@@ -59,12 +68,43 @@ namespace Touge.Vehicle
             }
 
             // ---- Rate limiting ------------------------------------------------------------------
-            // Models the driver's hands and the rack together. Returning to centre is faster than
-            // winding on lock, mimicking caster-driven self-centring.
-            bool returningToCentre = Mathf.Abs(target) < Mathf.Abs(SteerAngleDeg);
-            float rate = returningToCentre ? steering.returnRateDegPerSec : steering.steerRateDegPerSec;
+            SteerAngleDeg = RateLimit(SteerAngleDeg, target, steering, dt);
+        }
 
-            SteerAngleDeg = TougeMath.MoveTowardsRate(SteerAngleDeg, target, rate, dt);
+        /// <summary>
+        /// Move the rack toward <paramref name="target"/>, using the faster self-centring rate for
+        /// any part of the move that UNWINDS lock and the slower rate for any part that adds it.
+        ///
+        /// The distinction has to be made on the direction of motion, not on which end is closer to
+        /// centre. Comparing magnitudes - |target| &lt; |current| - gets the single most important
+        /// case wrong: a flick from full left to full right has equal magnitudes, so it was treated
+        /// as winding on and ran the ENTIRE swing, including the half that is really the wheel
+        /// unwinding, at the slow rate. That swing is precisely the motion used to catch a slide,
+        /// and it was the slowest thing the rack could do.
+        ///
+        /// A move that crosses centre is therefore split in two: unwind to zero at the return rate,
+        /// then spend whatever is left of the step winding on the opposite lock.
+        /// </summary>
+        private static float RateLimit(float current, float target, SteeringSpec steering, float dt)
+        {
+            float windRate = Mathf.Max(0f, steering.steerRateDegPerSec);
+            float unwindRate = Mathf.Max(0f, steering.returnRateDegPerSec);
+
+            if (current * target >= 0f)
+            {
+                // Same side of centre: the whole move is either winding on or unwinding.
+                bool unwinding = Mathf.Abs(target) < Mathf.Abs(current);
+                return TougeMath.MoveTowardsRate(current, target, unwinding ? unwindRate : windRate, dt);
+            }
+
+            // Crossing centre. Phase 1: back to straight ahead at the unwind rate.
+            // A zero unwind rate yields an infinite time, which correctly parks the wheel.
+            float unwindTime = TougeMath.SafeDivide(Mathf.Abs(current), unwindRate, float.PositiveInfinity);
+            if (unwindTime >= dt)
+                return TougeMath.MoveTowardsRate(current, 0f, unwindRate, dt);
+
+            // Phase 2: the remainder of the step goes into opposite lock.
+            return TougeMath.MoveTowardsRate(0f, target, windRate, dt - unwindTime);
         }
 
         /// <summary>Write the resolved steer angle, with Ackermann correction, onto the steered wheels.</summary>

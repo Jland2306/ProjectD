@@ -31,21 +31,21 @@ namespace Touge.Vehicle.Data
         [Header("Limited Slip")]
         [Tooltip("Static clutch preload - locking torque present even with no torque applied. [N*m]\n" +
                  "Raising this makes the car feel more welded at low throttle and stabilises long drifts.")]
-        public float preloadNm = 40f;
+        public float preloadNm = 90f;
 
         [Tooltip("Lock ramp under power: fraction of applied drive torque converted into locking torque, 0-1.\n" +
                  "Higher = the rear axle locks harder the more throttle you give = easier to hold a slide.")]
         [Range(0f, 1f)]
-        public float powerLockFactor = 0.55f;
+        public float powerLockFactor = 0.82f;
 
         [Tooltip("Lock ramp on overrun (closed throttle), 0-1.\n" +
                  "Higher = more stable on lift-off, but reduces lift-off oversteer availability.")]
         [Range(0f, 1f)]
-        public float coastLockFactor = 0.25f;
+        public float coastLockFactor = 0.45f;
 
         [Tooltip("How much wheel-speed difference the LSD tolerates before applying full locking torque. [rad/s]\n" +
                  "Small values make the diff behave closer to welded.")]
-        public float lockSpeedTolerance = 1.5f;
+        public float lockSpeedTolerance = 0.8f;
 
         /// <summary>True when the given axle receives engine torque under the current layout.</summary>
         public bool IsAxleDriven(bool isFront)

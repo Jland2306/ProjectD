@@ -17,7 +17,7 @@ MonoBehaviour:
     massKg: 950
     centerOfMassOffset: {x: 0, y: 0.05, z: 0.125}
     overrideInertiaTensor: 1
-    inertiaTensor: {x: 1250, y: 1350, z: 350}
+    inertiaTensor: {x: 1250, y: 1200, z: 350}
     aeroDragCoefficient: 0.4
     downforceFront: 0.02
     downforceRear: 0.03
@@ -109,6 +109,7 @@ MonoBehaviour:
     flywheelInertia: 0.16
     engineBrakingCoefficient: 0.045
     frictionTorqueNm: 12
+    engineBrakingThrottleRelief: 0.85
     idleGovernorGain: 0.0025
   gearbox:
     forwardRatios:
@@ -118,12 +119,12 @@ MonoBehaviour:
     - 1
     - 0.861
     reverseRatio: 3.484
-    finalDrive: 4.3
+    finalDrive: 4.7
     efficiency: 0.9
-    shiftTimeSeconds: 0.25
+    shiftTimeSeconds: 0.18
     defaultMode: 0
-    autoUpshiftRpm: 6800
-    autoDownshiftRpm: 2800
+    autoUpshiftRpm: 7350
+    autoDownshiftRpm: 3600
     clutchMaxTorqueNm: 320
     autoClutchEnabled: 1
     autoClutchEngageRpm: 2500
@@ -175,10 +176,10 @@ MonoBehaviour:
     rearType: 1
     frontType: 0
     centerSplitFront: 0.35
-    preloadNm: 40
-    powerLockFactor: 0.55
-    coastLockFactor: 0.25
-    lockSpeedTolerance: 1.5
+    preloadNm: 90
+    powerLockFactor: 0.82
+    coastLockFactor: 0.45
+    lockSpeedTolerance: 0.8
   suspension:
     front:
       restLength: 0.32
@@ -204,55 +205,55 @@ MonoBehaviour:
   tires:
     peakFrictionCoefficient: 1.05
     frontGripScale: 1
-    rearGripScale: 0.96
-    shapeC: 1.45
+    rearGripScale: 0.94
+    shapeC: 1.4
     curvatureE: 0.6
     peakSlipRatio: 0.18
-    peakSlipAngleDeg: 8.5
+    peakSlipAngleDeg: 9.5
     referenceLoadN: 2330
     loadSensitivity: 0.22
     minLoadSensitivityFactor: 0.55
-    relaxationLength: 0.45
+    relaxationLength: 0.32
     lowSpeedBlendThreshold: 2.5
     lowSpeedDamping: 900
     rollingResistance: 0.014
   steering:
-    maxSteerAngleDeg: 38
+    maxSteerAngleDeg: 44
     speedSensitivityCurve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
         time: 0
         value: 1
-        inSlope: -0.005
-        outSlope: -0.005
+        inSlope: -0.00125
+        outSlope: -0.00125
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 40
-        value: 0.8
-        inSlope: -0.005
-        outSlope: -0.005
+        value: 0.95
+        inSlope: -0.0013333334
+        outSlope: -0.0013333334
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 90
-        value: 0.55
-        inSlope: -0.0034285716
-        outSlope: -0.0034285716
+        value: 0.88
+        inSlope: -0.0010833334
+        outSlope: -0.0010833334
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 160
-        value: 0.42
-        inSlope: -0.0018571432
-        outSlope: -0.0018571432
+        value: 0.82
+        inSlope: -0.0008571429
+        outSlope: -0.0008571429
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
@@ -260,12 +261,13 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    steerRateDegPerSec: 220
-    returnRateDegPerSec: 320
+    steerRateDegPerSec: 300
+    returnRateDegPerSec: 430
     ackermannFactor: 0.6
   assists:
     brakeBiasFront: 0.62
-    counterSteerAssist: 0
+    counterSteerAssist: 0.45
+    counterSteerAssistDeadbandDeg: 6
     counterSteerAssistMaxFraction: 0.7
     tractionControlEnabled: 0
     tractionControlSlipThreshold: 0.16

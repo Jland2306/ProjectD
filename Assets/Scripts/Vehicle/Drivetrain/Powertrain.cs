@@ -123,7 +123,19 @@ namespace Touge.Vehicle.Drivetrain
 
             // Engine braking: pumping and friction losses, always opposing rotation. This is the
             // term that produces lift-off oversteer on a rear-wheel-drive car.
-            float brakingTorque = engine.engineBrakingCoefficient * EngineOmega + engine.frictionTorqueNm;
+            //
+            // It is faded out as the throttle opens. A published torque curve is measured at the
+            // crank with the throttle wide open, so it is ALREADY net of internal friction and
+            // pumping - subtracting the full drag again on top of it double-counts. On this engine
+            // that cost 40 N*m at 6000 rpm and 48 N*m at the limiter, i.e. 30-40% of peak torque,
+            // taken out exactly where the car should be pulling hardest. It made the engine feel
+            // like it died above 6000 rpm and blunted every gear.
+            //
+            // At a closed throttle the relief term is 1 and nothing changes, so engine braking and
+            // the lift-off oversteer that depends on it are untouched.
+            float dragRelief = 1f - Mathf.Clamp01(engine.engineBrakingThrottleRelief) * throttle;
+            float brakingTorque = (engine.engineBrakingCoefficient * EngineOmega + engine.frictionTorqueNm)
+                                  * dragRelief;
 
             EngineTorqueNm = wotTorque * throttle - brakingTorque;
 
