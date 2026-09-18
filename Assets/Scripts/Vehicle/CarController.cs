@@ -215,6 +215,13 @@ namespace Touge.Vehicle
             // Unity's linear damping is a v^1 term and would quietly distort the top-speed curve.
             _rb.linearDamping = 0f;
             _rb.angularDamping = chassis.angularDamping;
+
+            // Bound how hard the solver may eject the car from something it has sunk into. See the
+            // tooltip on the field - left at Unity's default this is the single most violent force
+            // the car can experience, and it fires exactly when you clip a barrier.
+            float maxDepenetration = Mathf.Max(0.1f, chassis.maxDepenetrationVelocity);
+            if (!Mathf.Approximately(_rb.maxDepenetrationVelocity, maxDepenetration))
+                _rb.maxDepenetrationVelocity = maxDepenetration;
         }
 
         /// <summary>

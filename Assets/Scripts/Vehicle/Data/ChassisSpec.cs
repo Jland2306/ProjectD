@@ -45,5 +45,13 @@ namespace Touge.Vehicle.Data
         [Tooltip("Angular drag applied to the rigidbody. Keep very low - real yaw damping should come " +
                  "from the tyres, not from a fudge factor. Raising this makes drifts feel artificially stable.")]
         public float angularDamping = 0.05f;
+
+        [Tooltip("Fastest the solver may push the car out of something it has sunk into. [m/s]\n" +
+                 "Unity leaves this effectively unbounded, which means a deep overlap is cleared in a " +
+                 "SINGLE step: 0.15 m of penetration at a 5 ms step is a 30 m/s ejection. That is what " +
+                 "launches a car that clipped a thin barrier into the sky. Clamping it spreads the same " +
+                 "separation over a few steps and turns the launch into a shove.\n" +
+                 "2-4 is a good range. Too low and the car can stay visibly buried for a moment.")]
+        public float maxDepenetrationVelocity = 3f;
     }
 }

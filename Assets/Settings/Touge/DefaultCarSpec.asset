@@ -22,6 +22,7 @@ MonoBehaviour:
     downforceFront: 0.02
     downforceRear: 0.03
     angularDamping: 0.05
+    maxDepenetrationVelocity: 3
   frontAxle:
     positionZ: 1.25
     mountHeightY: 0.1

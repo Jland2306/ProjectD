@@ -429,13 +429,13 @@ namespace Touge.Editor
             PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(BarrierMaterialPath);
             if (existing != null)
             {
-                // Refresh the values in place. An asset created by an earlier version of this method
-                // is frictionless but cannot bounce, and silently leaving it alone would mean the fix
-                // never reaches a project that already has one.
-                if (existing.bounceCombine != PhysicsMaterialCombine.Maximum ||
-                    existing.bounciness < 0.2f)
+                // Repair only the one setting that is never a choice: minimum bounce combine takes
+                // min(0, x) against the car's bare collider, so it pins restitution to zero and makes
+                // the bounciness field below it dead. Everything else is left exactly as authored -
+                // bounciness is the knob you tune by hand, and this must not walk back over it.
+                if (existing.bounceCombine == PhysicsMaterialCombine.Minimum)
                 {
-                    ConfigureBarrierMaterial(existing);
+                    existing.bounceCombine = PhysicsMaterialCombine.Maximum;
                     EditorUtility.SetDirty(existing);
                 }
                 return existing;
@@ -454,7 +454,11 @@ namespace Touge.Editor
             material.dynamicFriction = 0f;
             material.staticFriction = 0f;
             material.frictionCombine = PhysicsMaterialCombine.Minimum;
-            material.bounciness = 0.25f;
+            // Deliberately small. This exists to guarantee the car separates from a wall rather than
+            // resting against it; it is not meant to return a meaningful share of the impact. Above
+            // roughly 0.15 a glancing hit starts rolling the car - the roll inertia here is only
+            // 350 kg*m^2 - and a roll with the suspension unloading is what throws a car into the air.
+            material.bounciness = 0.08f;
             material.bounceCombine = PhysicsMaterialCombine.Maximum;
         }
 
