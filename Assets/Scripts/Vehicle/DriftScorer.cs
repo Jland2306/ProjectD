@@ -15,10 +15,10 @@ namespace Touge.Vehicle
     public class DriftScorer
     {
         [Tooltip("Body slip angle above which the car is considered to be drifting. [degrees]")]
-        public float minDriftAngleDeg = 12f;
+        public float minDriftAngleDeg = 14f;
 
         [Tooltip("Slip angle beyond which the car counts as spun rather than drifting, ending the run. [degrees]")]
-        public float maxDriftAngleDeg = 90f;
+        public float maxDriftAngleDeg = 100f;
 
         [Tooltip("Minimum speed for a slide to count, so spinning on the spot scores nothing. [m/s]")]
         public float minSpeedMps = 8f;
