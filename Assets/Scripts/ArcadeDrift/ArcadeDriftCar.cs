@@ -17,19 +17,27 @@ namespace Touge.ArcadeDrift
     /// cannot, the back keeps sliding while the front does not, and the car rotates - that is a
     /// drift, and it is the same four lines of code as an ordinary corner.
     ///
-    /// WHAT IS DELIBERATELY ABSENT: no yaw correction, no drift-angle term, no counter-steer assist,
-    /// no stability control, and nothing anywhere that reads how sideways the car is and reacts to
-    /// it. Every rotation is a consequence of one axle running out of grip before the other. If it
-    /// spins, you asked the rear for more than rearGrip. That is the point - it makes the two grip
-    /// numbers and the two axle offsets honest controls rather than suggestions some hidden
-    /// corrector gets to overrule.
+    /// DELIBERATELY ABSENT: no yaw correction, no drift-angle term, no counter-steer assist, no
+    /// stability control - nothing that reads how sideways the car is and reacts to it. If it spins,
+    /// you asked the rear for more than rearGrip. That keeps the twelve numbers honest.
+    ///
+    /// THE RULE THAT DECIDES WHETHER A SLIDE IS CATCHABLE. While both axles slide, each makes exactly
+    /// its limit, so the yaw torque each contributes is just grip * offset. Compare:
+    ///
+    ///     frontGrip * frontAxleOffset   vs   rearGrip * rearAxleOffset
+    ///
+    /// If the front side is more than ~10% larger the car gains yaw rate on its own for as long as it
+    /// slides, and no counter-steer brings it back: that is divergent, not loose. Within a few percent
+    /// and a slide holds where you put it, because counter-steering shrinks the front side and lets
+    /// the rear win. Defaults are 17*1.4 = 23.8 against 15*1.6 = 24.0 - neutral on purpose.
     ///
     /// TUNING ORDER when it feels wrong:
-    ///   rearGrip           the drift knob. Below frontGrip it rotates; far below, it spins.
+    ///   rearGrip           the drift knob, and the one that decides the balance above.
     ///   frontGrip          how hard the nose bites on turn-in.
     ///   handbrakeGripScale how violently the handbrake breaks the rear away.
-    ///   rearAxleOffset     leverage. Further back = slower, lazier, more controllable rotation.
-    ///   steerSpeed         how fast you can catch a slide. The "can I save it" number.
+    ///   rearAxleOffset     leverage. Further back = the rear resists rotation harder.
+    ///   steerSpeed         how fast you can catch a slide. Below ~200 deg/s slides stop being
+    ///                      saveable at all, whatever the grip numbers say.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(BoxCollider))]
@@ -51,11 +59,11 @@ namespace Touge.ArcadeDrift
 
         [Header("Grip - the drift controls")]
         [Tooltip("Front axle lateral grip limit. [m/s^2] How hard the nose bites on turn-in.")]
-        public float frontGrip = 18f;
+        public float frontGrip = 17f;
 
         [Tooltip("Rear axle lateral grip limit. [m/s^2] THE drift knob - start here. Below frontGrip " +
                  "the car rotates into corners; well below it, it spins.")]
-        public float rearGrip = 13f;
+        public float rearGrip = 15f;
 
         [Tooltip("Rear grip multiplier while the handbrake is held. 0.25 is a violent break-away.")]
         [Range(0f, 1f)]
@@ -67,16 +75,16 @@ namespace Touge.ArcadeDrift
 
         [Tooltip("How fast the steer angle chases the stick. [deg/s] These are your hands: too slow " +
                  "and a slide is uncatchable, too fast and the keyboard feels like a switch.")]
-        public float steerSpeed = 260f;
+        public float steerSpeed = 340f;
 
         [Header("Geometry - where the axles sit")]
         [Tooltip("Front axle distance ahead of the centre of mass. [m] Further forward = more " +
                  "leverage = sharper rotation on turn-in.")]
-        public float frontAxleOffset = 1.5f;
+        public float frontAxleOffset = 1.4f;
 
         [Tooltip("Rear axle distance behind the centre of mass. [m] Further back = the rear resists " +
                  "rotation harder = lazier, more controllable slides.")]
-        public float rearAxleOffset = 1.5f;
+        public float rearAxleOffset = 1.6f;
 
         [Header("Feel")]
         [Tooltip("Gravity on top of Physics.gravity. [m/s^2] Raise for planted and hard landings.")]
@@ -89,6 +97,12 @@ namespace Touge.ArcadeDrift
         [Header("Debug")]
         [Tooltip("On-screen readout. NOT a handling parameter - delete it freely.")]
         public bool showReadout = true;
+
+        // How quickly an axle is asked to bleed off sideways motion. [s] This sets the width of the
+        // progressive band before grip saturates: at 0.06 s an axle takes about 1 m/s of sideways
+        // slide to reach its limit. Deliberately a constant and not a parameter, to hold the count
+        // at twelve - say the word and it becomes the thirteenth.
+        private const float GripRelaxation = 0.06f;
 
         private const float ProbeMargin = 0.45f;      // How far below the body to look for ground. [m]
         private const float SteepestGround = 0.35f;   // cos of the steepest surface worth standing on.
@@ -184,8 +198,14 @@ namespace Touge.ArcadeDrift
 
             float lateralSpeed = Vector3.Dot(_rb.GetPointVelocity(point), right);
             float axleMass = _rb.mass * 0.5f;             // Each axle carries half the car.
-            float required = -lateralSpeed * axleMass / dt;  // Kill the slide outright, this step...
-            float limit = gripLimit * axleMass;              // ...but only this much is allowed.
+
+            // Bleed the slide off over GripRelaxation rather than killing it in a single step. With
+            // dt here, an axle reached its limit at 0.09 m/s of sideways motion, so grip behaved as
+            // a switch - full bite, then nothing, with no band in between for the car to visibly
+            // load up in. Flooring it at dt keeps this stable at any timestep.
+            float relaxation = Mathf.Max(GripRelaxation, dt);
+            float required = -lateralSpeed * axleMass / relaxation;
+            float limit = gripLimit * axleMass;
 
             // THE CLAMP IS THE WHOLE GAME: below it the axle holds and the car corners; at it the
             // axle is sliding and the car drifts.
