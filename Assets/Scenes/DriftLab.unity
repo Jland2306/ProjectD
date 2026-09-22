@@ -2993,12 +2993,12 @@ MonoBehaviour:
   enginePower: 12
   brakePower: 16
   maxSpeed: 42
-  frontGrip: 17
+  frontGrip: 21
   rearGrip: 15
   handbrakeGripScale: 0.25
-  maxSteerAngle: 38
+  maxSteerAngle: 32
   steerSpeed: 340
-  frontAxleOffset: 1.4
+  frontAxleOffset: 1.13
   rearAxleOffset: 1.6
   extraGravity: 12
   alignSpeed: 14

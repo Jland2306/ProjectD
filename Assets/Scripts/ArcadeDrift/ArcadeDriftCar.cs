@@ -13,31 +13,35 @@ namespace Touge.ArcadeDrift
     ///   3. refuse to produce more than that axle's grip limit,
     ///   4. apply what is left at the axle's position, which yaws the car as a side effect.
     ///
-    /// Step 3 is the game. While both axles meet their demand the car grips and turns. When the rear
-    /// cannot, the back keeps sliding while the front does not, and the car rotates - that is a
-    /// drift, and it is the same four lines of code as an ordinary corner.
+    /// Step 3 is the game. While both axles meet their demand the car grips and turns; when the rear
+    /// cannot, the back keeps sliding while the front does not and the car rotates. A drift is the
+    /// same four lines of code as an ordinary corner.
     ///
     /// DELIBERATELY ABSENT: no yaw correction, no drift-angle term, no counter-steer assist, no
-    /// stability control - nothing that reads how sideways the car is and reacts to it. If it spins,
-    /// you asked the rear for more than rearGrip. That keeps the twelve numbers honest.
+    /// stability control. If it spins, you asked the rear for more than rearGrip.
     ///
-    /// THE RULE THAT DECIDES WHETHER A SLIDE IS CATCHABLE. While both axles slide, each makes exactly
-    /// its limit, so the yaw torque each contributes is just grip * offset. Compare:
+    /// TWO RULES WORTH KNOWING BEFORE YOU TUNE.
     ///
-    ///     frontGrip * frontAxleOffset   vs   rearGrip * rearAxleOffset
+    /// 1. IS A SLIDE CATCHABLE? While both axles slide each makes exactly its limit, so the yaw
+    ///    torque each contributes is just grip * offset:
+    ///        frontGrip * frontAxleOffset   vs   rearGrip * rearAxleOffset
+    ///    More than ~10% front-heavy and the car gains yaw rate on its own for as long as it slides -
+    ///    divergent, not loose, and no counter-steer brings it back. Within a few percent and a slide
+    ///    holds where you put it, because counter-steering shrinks the front side and the rear wins.
+    ///    Defaults: 21*1.13 = 23.7 against 15*1.6 = 24.0, neutral on purpose.
     ///
-    /// If the front side is more than ~10% larger the car gains yaw rate on its own for as long as it
-    /// slides, and no counter-steer brings it back: that is divergent, not loose. Within a few percent
-    /// and a slide holds where you put it, because counter-steering shrinks the front side and lets
-    /// the rear win. Defaults are 17*1.4 = 23.8 against 15*1.6 = 24.0 - neutral on purpose.
+    /// 2. MORE LOCK IS NOT MORE TURN. At speed the front saturates within a few degrees, so extra
+    ///    steering adds no force - it only rotates the force already there. The part that yaws the
+    ///    car goes as cos(steer), the part that fights the engine as sin(steer), so past saturation
+    ///    every extra degree rotates LESS and scrubs off MORE speed. Cornering is limited by
+    ///    frontGrip, not by lock: raise frontGrip and drop frontAxleOffset to keep rule 1.
     ///
     /// TUNING ORDER when it feels wrong:
-    ///   rearGrip           the drift knob, and the one that decides the balance above.
-    ///   frontGrip          how hard the nose bites on turn-in.
+    ///   rearGrip           the drift knob, and what decides rule 1.
+    ///   frontGrip          how tight it corners on the grip (keep the product, see rule 2).
     ///   handbrakeGripScale how violently the handbrake breaks the rear away.
     ///   rearAxleOffset     leverage. Further back = the rear resists rotation harder.
-    ///   steerSpeed         how fast you can catch a slide. Below ~200 deg/s slides stop being
-    ///                      saveable at all, whatever the grip numbers say.
+    ///   steerSpeed         below ~200 deg/s slides stop being saveable, whatever the grips say.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(BoxCollider))]
@@ -58,8 +62,9 @@ namespace Touge.ArcadeDrift
         public float maxSpeed = 42f;
 
         [Header("Grip - the drift controls")]
-        [Tooltip("Front axle lateral grip limit. [m/s^2] How hard the nose bites on turn-in.")]
-        public float frontGrip = 17f;
+        [Tooltip("Front axle lateral grip limit. [m/s^2] Sets how tight the car corners ON THE GRIP. " +
+                 "Raise it and lower frontAxleOffset to match, or the balance below shifts.")]
+        public float frontGrip = 21f;
 
         [Tooltip("Rear axle lateral grip limit. [m/s^2] THE drift knob - start here. Below frontGrip " +
                  "the car rotates into corners; well below it, it spins.")]
@@ -70,8 +75,9 @@ namespace Touge.ArcadeDrift
         public float handbrakeGripScale = 0.25f;
 
         [Header("Steering")]
-        [Tooltip("Steer angle at full lock. [deg] 35-45 so you never run out of counter-steer.")]
-        public float maxSteerAngle = 38f;
+        [Tooltip("Steer angle at full lock. [deg] More is NOT better - see the note on scrub above. " +
+                 "30-34 corners tightest and is still plenty of counter-steer.")]
+        public float maxSteerAngle = 32f;
 
         [Tooltip("How fast the steer angle chases the stick. [deg/s] These are your hands: too slow " +
                  "and a slide is uncatchable, too fast and the keyboard feels like a switch.")]
@@ -80,7 +86,7 @@ namespace Touge.ArcadeDrift
         [Header("Geometry - where the axles sit")]
         [Tooltip("Front axle distance ahead of the centre of mass. [m] Further forward = more " +
                  "leverage = sharper rotation on turn-in.")]
-        public float frontAxleOffset = 1.4f;
+        public float frontAxleOffset = 1.13f;
 
         [Tooltip("Rear axle distance behind the centre of mass. [m] Further back = the rear resists " +
                  "rotation harder = lazier, more controllable slides.")]
