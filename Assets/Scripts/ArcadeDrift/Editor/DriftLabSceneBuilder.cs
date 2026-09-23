@@ -141,6 +141,7 @@ namespace Touge.ArcadeDrift.Editor
             box.sharedMaterial = EnsureSlickMaterial();
 
             car.AddComponent<ArcadeDriftCar>();
+            car.AddComponent<ArcadeDriftScorer>();
             return car;
         }
 

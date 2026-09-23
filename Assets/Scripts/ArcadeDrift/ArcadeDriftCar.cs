@@ -125,6 +125,9 @@ namespace Touge.ArcadeDrift
         /// <summary>Speed over ground. [km/h]</summary>
         public float SpeedKph => _rb.linearVelocity.magnitude * 3.6f;
 
+        /// <summary>True while the probe has a drivable surface under the car.</summary>
+        public bool IsGrounded => _grounded;
+
         /// <summary>Angle between heading and travel. [deg] Reported only - never read back.</summary>
         public float SlipAngle
         {
