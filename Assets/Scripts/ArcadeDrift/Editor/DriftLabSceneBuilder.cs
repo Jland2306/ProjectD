@@ -109,7 +109,7 @@ namespace Touge.ArcadeDrift.Editor
             post.GetComponent<Collider>().isTrigger = true;
         }
 
-        private static GameObject CreateCar(Material bodyMaterial, Material noseMaterial)
+        internal static GameObject CreateCar(Material bodyMaterial, Material noseMaterial)
         {
             GameObject car = new GameObject("ArcadeCar");
             car.transform.position = new Vector3(0f, 1.0f, -40f);
@@ -153,7 +153,7 @@ namespace Touge.ArcadeDrift.Editor
         /// Minimum combine means the PAIR is frictionless regardless of what the ground is wearing,
         /// which keeps that true on any surface you drop into the scene later.
         /// </summary>
-        private static PhysicsMaterial EnsureSlickMaterial()
+        internal static PhysicsMaterial EnsureSlickMaterial()
         {
             PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(SlickPath);
             if (existing != null) return existing;
@@ -173,7 +173,7 @@ namespace Touge.ArcadeDrift.Editor
             return slick;
         }
 
-        private static void CreateCamera(Transform target)
+        internal static void CreateCamera(Transform target)
         {
             GameObject go = new GameObject("DriftLabCamera");
             Camera camera = go.AddComponent<Camera>();
@@ -185,7 +185,7 @@ namespace Touge.ArcadeDrift.Editor
             follow.target = target;
         }
 
-        private static Material CreateMaterial(string name, Color colour)
+        internal static Material CreateMaterial(string name, Color colour)
         {
             EnsureFolder(SettingsFolder);
             string path = SettingsFolder + "/" + name + ".mat";
@@ -202,7 +202,7 @@ namespace Touge.ArcadeDrift.Editor
             return material;
         }
 
-        private static void EnsureFolder(string path)
+        internal static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
 

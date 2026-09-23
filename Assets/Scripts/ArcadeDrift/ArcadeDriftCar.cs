@@ -125,10 +125,7 @@ namespace Touge.ArcadeDrift
         /// <summary>Speed over ground. [km/h]</summary>
         public float SpeedKph => _rb.linearVelocity.magnitude * 3.6f;
 
-        /// <summary>
-        /// Angle between where the car points and where it is going. [deg] Reported only - nothing
-        /// in this file ever reads it back.
-        /// </summary>
+        /// <summary>Angle between heading and travel. [deg] Reported only - never read back.</summary>
         public float SlipAngle
         {
             get
@@ -144,6 +141,10 @@ namespace Touge.ArcadeDrift
             _rb = GetComponent<Rigidbody>();
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
             _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            // Unity leaves this unbounded, so a deep overlap clears in ONE step - on a track with
+            // barriers that is a catapult, not a collision.
+            _rb.maxDepenetrationVelocity = 3f;
 
             // All resistance is modelled explicitly below. Unity's damping would quietly bleed the
             // sideways velocity a slide is made of, shortening every drift for no visible reason
@@ -274,11 +275,8 @@ namespace Touge.ArcadeDrift
             _groundNormal = hit.normal;
         }
 
-        /// <summary>
-        /// Devices are polled directly rather than through an InputActionAsset - for a lab scene
-        /// that is one less thing to wire and one less file to keep in sync. Swap in an action asset
-        /// once the handling is settled and bindings start to matter.
-        /// </summary>
+        /// <summary>Devices polled directly, not via an InputActionAsset - one less thing to wire
+        /// for a lab. Swap in an action asset once bindings start to matter.</summary>
         private void ReadInput()
         {
             float steer = 0f, throttle = 0f, brake = 0f;
@@ -326,10 +324,10 @@ namespace Touge.ArcadeDrift
         private void OnGUI()
         {
             if (!showReadout) return;
-            GUI.Label(new Rect(12f, 12f, 320f, 20f), $"{SpeedKph:F0} km/h");
-            GUI.Label(new Rect(12f, 30f, 320f, 20f), $"slip {SlipAngle:F0} deg");
-            GUI.Label(new Rect(12f, 48f, 320f, 20f), _grounded ? "grounded" : "AIRBORNE");
-            GUI.Label(new Rect(12f, 66f, 320f, 20f), "WASD  space=handbrake  R=respawn");
+            GUI.Label(new Rect(12f, 12f, 360f, 90f),
+                      $"{SpeedKph:F0} km/h\nslip {SlipAngle:F0} deg\n"
+                      + (_grounded ? "grounded" : "AIRBORNE")
+                      + "\nWASD  space=handbrake  R=respawn");
         }
 
         /// <summary>The two points the entire model runs on.</summary>

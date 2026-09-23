@@ -1,7 +1,7 @@
 {
     "name": "Touge.ArcadeDrift.Editor",
     "rootNamespace": "Touge.ArcadeDrift.Editor",
-    "references": ["Touge.ArcadeDrift"],
+    "references": ["Touge.ArcadeDrift", "Touge.Track"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
