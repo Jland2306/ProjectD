@@ -59,12 +59,12 @@ namespace Touge.ArcadeDrift
         public float brakePower = 18f;
 
         [Tooltip("Top speed. [m/s] Drag is derived from this, so it is the only speed number.")]
-        public float maxSpeed = 42f;
+        public float maxSpeed = 50f;
 
         [Header("Grip - the drift controls")]
         [Tooltip("Front axle lateral grip limit. [m/s^2] Sets how tight the car corners ON THE GRIP. " +
                  "Raise it and lower frontAxleOffset to match, or the balance below shifts.")]
-        public float frontGrip = 21f;
+        public float frontGrip = 20f;
 
         [Tooltip("Rear axle lateral grip limit. [m/s^2] THE drift knob - start here. Below frontGrip " +
                  "the car rotates into corners; well below it, it spins.")]
