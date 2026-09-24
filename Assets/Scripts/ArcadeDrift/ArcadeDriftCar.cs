@@ -53,10 +53,10 @@ namespace Touge.ArcadeDrift
 
         [Header("Power")]
         [Tooltip("Forward acceleration at full throttle. [m/s^2] ~10 is brisk, ~18 is quick.")]
-        public float enginePower = 12f;
+        public float enginePower = 14f;
 
         [Tooltip("Braking deceleration. [m/s^2] Doubles as reverse when held at a standstill.")]
-        public float brakePower = 16f;
+        public float brakePower = 18f;
 
         [Tooltip("Top speed. [m/s] Drag is derived from this, so it is the only speed number.")]
         public float maxSpeed = 42f;
