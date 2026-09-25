@@ -86,6 +86,10 @@ namespace Touge.ArcadeDrift.Editor
             ConfigureCameraForTouge();
             RetargetCheckpoints(car);
 
+            // Scenery only reads the shared road meshes, so the course stays identical to the
+            // simulation scene's - the two differ in what surrounds the road, never in the road.
+            AkinaSceneryBuilder.Build(scene, System.IO.Path.GetFileNameWithoutExtension(TargetScene));
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, TargetScene);
             AssetDatabase.SaveAssets();
